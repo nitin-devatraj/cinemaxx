@@ -101,6 +101,9 @@ async function displayMovieDetails() {
   const movieID = window.location.search.split("=")[1];
   const movie = await fetchApiData(`movie/${movieID}`);
 
+  // to add the backdrop image
+  displayBackgroundImage("movie", movie.backdrop_path);
+
   const div = document.createElement("div");
   div.innerHTML = `
   <div class="details-top">
@@ -169,6 +172,28 @@ function highlightActiveLink() {
       link.classList.add("active");
     }
   });
+}
+
+// display background images on details pages
+function displayBackgroundImage(type, backdropPath) {
+  const div = document.createElement("div");
+  div.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${backdropPath})`;
+  div.style.backgroundSize = "cover";
+  div.style.backgroundPosition = "center";
+  div.style.backgroundRepeat = "no-repeat";
+  div.style.height = "100vh";
+  div.style.width = "100vw";
+  div.style.position = "absolute";
+  div.style.top = "0";
+  div.style.left = "0";
+  div.style.zIndex = "-1";
+  div.style.opacity = "0.2";
+
+  if (type === "movie") {
+    document.querySelector("#movie-details").appendChild(div);
+  } else {
+    document.querySelector("#show-details").appendChild(div);
+  }
 }
 
 function showSpinner() {
