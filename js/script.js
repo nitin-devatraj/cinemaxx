@@ -2,6 +2,16 @@ document.addEventListener("DOMContentLoaded", init);
 
 const global = {
   currentPage: window.location.pathname,
+  search: {
+    term: "",
+    type: "",
+    page: 1,
+    totalPages: 1,
+  },
+  api: {
+    apiKey: "493416f28c67cc7b85eaf63fa3006630",
+    apiUrl: "https://api.themoviedb.org/3/",
+  },
 };
 
 // initialize the app
@@ -275,13 +285,56 @@ function initSwiper() {
   });
 }
 
-// Highlight the active link (movies || tv shows)
-function highlightActiveLink() {
-  const links = document.querySelectorAll(".nav-link");
-  links.forEach((link) => {
-    if (link.getAttribute("href") === global.currentPage) {
-      link.classList.add("active");
-    }
+// search movies / tv shows
+async function search() {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  global.search.type = urlParams.get("type");
+  global.search.term = urlParams.get("search-term");
+
+  if (global.search.term === "" || global.search.term === null) {
+    showAlert("please enter a search term", "error");
+  }
+
+  const { results, page, total_pages } = await searchApiData();
+  if (results.length === 0) {
+    showAlert("no results found", "error");
+  }
+
+  displaySearchResults(results);
+  document.querySelector("#search-term").value = "";
+}
+
+function displaySearchResults(results) {
+  results.forEach((result) => {
+    const div = document.createElement("div");
+    div.classList.add("card");
+    div.innerHTML = `
+          <a href="${global.search.type}-details.html?id=${result.id}">
+            ${
+              result.poster_path
+                ? `<img
+                src="https://image.tmdb.org/t/p/w500/${result.poster_path}"
+                class="card-img-top"
+                alt="${result.title ?? result.name}"
+              />`
+                : `<img
+              src="../images/no-image.jpg"
+              class="card-img-top"
+              alt="${result.title ?? result.name}"
+            />`
+            }
+          </a>
+          <div class="card-body">
+            <h5 class="card-title">${result.title ?? result.name}</h5>
+            <p class="card-text">
+              <small class="text-muted">Release: ${
+                result.release_date ?? result.first_air_date
+              }</small>
+            </p>
+          </div>  
+    `;
+    document.querySelector("#search-results").appendChild(div);
   });
 }
 
@@ -307,6 +360,25 @@ function displayBackgroundImage(type, backdropPath) {
   }
 }
 
+// Highlight the active link (movies || tv shows)
+function highlightActiveLink() {
+  const links = document.querySelectorAll(".nav-link");
+  links.forEach((link) => {
+    if (link.getAttribute("href") === global.currentPage) {
+      link.classList.add("active");
+    }
+  });
+}
+
+// show alert
+function showAlert(message, className) {
+  const alertElement = document.createElement("div");
+  alertElement.classList.add("alert", className);
+  alertElement.appendChild(document.createTextNode(message));
+  document.querySelector("#alert").appendChild(alertElement);
+  setTimeout(() => alertElement.remove(), 2000);
+}
+
 function showSpinner() {
   document.querySelector(".spinner").classList.add("show");
 }
@@ -321,12 +393,28 @@ function addCommasToNumbers(number) {
 
 // fetch data from the TMDB API
 async function fetchApiData(endPoint) {
-  const API_KEY = "493416f28c67cc7b85eaf63fa3006630";
-  const API_URL = "https://api.themoviedb.org/3/";
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
 
   showSpinner();
   const response = await fetch(
     `${API_URL}${endPoint}?api_key=${API_KEY}&language=en-US`
+  );
+
+  const data = await response.json();
+  hideSpinner();
+
+  return data;
+}
+
+// make serach request
+async function searchApiData() {
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
+
+  showSpinner();
+  const response = await fetch(
+    `${API_URL}search/${global.search.type}?api_key=${API_KEY}&language=en-US&query=${global.search.term}`
   );
 
   const data = await response.json();
